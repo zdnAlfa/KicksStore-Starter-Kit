@@ -10,6 +10,8 @@ class ProductCard extends StatelessWidget {
   final String imageUrl;
   final VoidCallback? onAddToCart;
   final VoidCallback? onTap;
+  final bool isFavorite;
+  final VoidCallback? onToggleFavorite;
 
   const ProductCard({
     super.key,
@@ -19,6 +21,8 @@ class ProductCard extends StatelessWidget {
     required this.rating,
     required this.imageUrl,
     this.onAddToCart,
+    this.isFavorite = false,
+    this.onToggleFavorite,
     this.onTap,
   });
 
@@ -28,22 +32,26 @@ class ProductCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      elevation: 2,
       child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Gambar Produk dengan Badge Kategori
+            // 1. Gambar Produk dengan Badge Kategori & Tombol Favorit
             Expanded(
               flex: 5,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
+                 
                   Container(
                     color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                     child: Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
+                      cacheWidth: 400, 
+                      cacheHeight: 400,
                       errorBuilder: (context, error, stackTrace) => Center(
                         child: Icon(
                           Icons.image_not_supported_outlined,
@@ -59,14 +67,15 @@ class ProductCard extends StatelessWidget {
                       },
                     ),
                   ),
-                  // Badge Kategori
+                  
+                  // Badge Kategori (Kiri Atas)
                   Positioned(
                     top: 8,
                     left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(160),
+                        color: Colors.black.withValues(alpha: 0.6), 
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -79,11 +88,41 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                  // Tombol Favorit (Kanan Atas)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Material(
+                      color: Colors.transparent, 
+                      child: InkWell(
+                        onTap: onToggleFavorite,
+                        borderRadius: BorderRadius.circular(20),
+                        splashColor: Colors.transparent, 
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isDark 
+                                ? Colors.black.withValues(alpha: 0.6) 
+                                : Colors.white.withValues(alpha: 0.85),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            size: 18,
+                            color: isFavorite 
+                                ? Colors.redAccent 
+                                : (isDark ? Colors.white70 : Colors.black54),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            // Informasi Produk (Judul, Harga, Rating, Tombol Beli)
+            // 2. Informasi Produk (Judul, Rating, Harga, Tombol Beli)
             Expanded(
               flex: 5,
               child: Padding(
