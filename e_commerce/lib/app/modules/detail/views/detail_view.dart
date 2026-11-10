@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/modules/cart/controllers/cart_controller.dart';
 import 'package:e_commerce/app/modules/detail/controllers/detail_controller.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
 
@@ -17,6 +18,8 @@ class DetailView extends GetView<DetailController> {
       symbol: 'Rp ',
       decimalDigits: 0,
     );
+
+    final cartController = Get.find<CartController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -38,20 +41,43 @@ class DetailView extends GetView<DetailController> {
               onPressed: controller.toggleFavorite,
             ),
           ),
-          IconButton(
-            tooltip: 'Buka Keranjang',
-            icon: const Icon(Icons.shopping_bag_outlined),
-            onPressed: () => Get.toNamed(Routes.CART),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                tooltip: 'Buka Keranjang',
+                icon: const Icon(Icons.shopping_bag_outlined),
+                onPressed: () => Get.toNamed(Routes.CART),
+              ),
+              Obx(() {
+                final count = cartController.totalItemCount;
+                if (count == 0) return const SizedBox.shrink();
+                return Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              }),
+            ],
           ),
           const SizedBox(width: 8),
         ],
       ),
       body: Obx(() {
-        final product = controller.product;
-        final price = product['price'];
-        final formattedPrice = price is num
-            ? currencyFormatter.format(price)
-            : (price?.toString() ?? 'Rp 0');
+        final p = controller.product.value;
+        
+        if (p == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -62,36 +88,19 @@ class DetailView extends GetView<DetailController> {
                 height: 280,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurfaceCard
-                      : const Color(0xFFF1F5F9),
+                  color: isDark ? AppColors.darkSurfaceCard : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color:
-                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  ),
+                  border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Image.network(
-                    product['imageUrl'] as String? ?? '',
+                    p.imageUrl,
                     fit: BoxFit.cover,
                     cacheWidth: 800,
                     errorBuilder: (context, error, stackTrace) => Center(
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        size: 64,
-                        color: isDark
-                            ? AppColors.darkTextMuted
-                            : AppColors.lightTextMuted,
-                      ),
+                      child: Icon(Icons.image_not_supported_outlined, size: 64, color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
                     ),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      );
-                    },
                   ),
                 ),
               ),
@@ -101,40 +110,23 @@ class DetailView extends GetView<DetailController> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 5,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      product['category'] as String? ?? 'Sneakers',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      p.category,
+                      style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        size: 20,
-                        color: AppColors.accent,
-                      ),
+                      const Icon(Icons.star_rounded, size: 20, color: AppColors.accent),
                       const SizedBox(width: 4),
                       Text(
-                        '${product['rating'] ?? 4.9} / 5.0 (${product['reviewCount'] ?? 120}+ ulasan)',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.lightTextSecondary,
-                        ),
+                        '${p.rating} / 5.0 (${p.reviewCount}+ ulasan)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
                       ),
                     ],
                   ),
@@ -143,36 +135,19 @@ class DetailView extends GetView<DetailController> {
               const SizedBox(height: 12),
 
               Text(
-                product['name'] as String? ?? 'Sneakers Premium',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
-                  height: 1.2,
-                ),
+                p.name,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary, height: 1.2),
               ),
               const SizedBox(height: 8),
               Text(
-                formattedPrice,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primary,
-                ),
+                p.formattedPrice,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
               ),
               const SizedBox(height: 20),
 
               Text(
                 'Pilih Ukuran (EU)',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -187,26 +162,14 @@ class DetailView extends GetView<DetailController> {
                         if (selected) controller.changeSize(size);
                       },
                       labelStyle: TextStyle(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.lightTextPrimary),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: isSelected ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
                       ),
                       selectedColor: AppColors.primary,
-                      backgroundColor:
-                          isDark ? AppColors.darkSurfaceCard : Colors.white,
+                      backgroundColor: isDark ? AppColors.darkSurfaceCard : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: isSelected
-                              ? AppColors.primary
-                              : (isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.lightBorder),
-                        ),
+                        side: BorderSide(color: isSelected ? AppColors.primary : (isDark ? AppColors.darkBorder : AppColors.lightBorder)),
                       ),
                     );
                   });
@@ -216,25 +179,12 @@ class DetailView extends GetView<DetailController> {
 
               Text(
                 'Deskripsi Produk',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
               ),
               const SizedBox(height: 8),
               Text(
-                product['description'] as String? ??
-                    'Sneakers berkualitas tinggi dengan bantalan responsif, material premium pilihan, dan kenyamanan optimal untuk aktivitas kasual maupun olahraga.',
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.6,
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.lightTextSecondary,
-                ),
+                p.description,
+                style: TextStyle(fontSize: 14, height: 1.6, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
               ),
               const SizedBox(height: 100),
             ],
@@ -258,54 +208,28 @@ class DetailView extends GetView<DetailController> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color:
-                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  ),
+                  border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_rounded, size: 18),
-                      onPressed: controller.decrementQuantity,
-                    ),
-                    Obx(
-                      () => Text(
-                        '${controller.quantity.value}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_rounded, size: 18),
-                      onPressed: controller.incrementQuantity,
-                    ),
+                    IconButton(icon: const Icon(Icons.remove_rounded, size: 18), onPressed: controller.decrementQuantity),
+                    Obx(() => Text('${controller.quantity.value}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+                    IconButton(icon: const Icon(Icons.add_rounded, size: 18), onPressed: controller.incrementQuantity),
                   ],
                 ),
               ),
               const SizedBox(width: 14),
-
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: controller.addToCart,
                   icon: const Icon(Icons.add_shopping_cart_rounded, size: 20),
-                  label: const Text(
-                    'Tambah Keranjang',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  label: const Text('Tambah Keranjang', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),

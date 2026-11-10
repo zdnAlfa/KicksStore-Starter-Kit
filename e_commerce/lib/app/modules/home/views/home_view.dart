@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/modules/cart/controllers/cart_controller.dart';
 import 'package:e_commerce/app/modules/home/controllers/home_controller.dart';
 import 'package:e_commerce/app/modules/home/views/components/product_card.dart';
 import 'package:e_commerce/app/modules/home/views/components/promo_banner.dart';
@@ -19,6 +20,8 @@ class HomeView extends GetView<HomeController> {
       symbol: 'Rp ',
       decimalDigits: 0,
     );
+    
+    final cartController = Get.find<CartController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -76,9 +79,8 @@ class HomeView extends GetView<HomeController> {
                 icon: const Icon(Icons.shopping_bag_outlined),
                 onPressed: () => Get.toNamed(Routes.CART),
               ),
-              // 1. OBX GRANULAR: Hanya rebuild badge saat cartCount berubah
               Obx(() {
-                final count = controller.cartCount.value;
+                final count = cartController.totalItemCount;
                 if (count == 0) return const SizedBox.shrink();
                 return Positioned(
                   right: 8,
@@ -112,7 +114,7 @@ class HomeView extends GetView<HomeController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Halo, Sneakers Enthusiast! 👋',
+                      'Halo, Sneakers Enthusiast!',
                       style: TextStyle(fontSize: 14, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
                     ),
                     const SizedBox(height: 2),
@@ -127,7 +129,6 @@ class HomeView extends GetView<HomeController> {
                   borderRadius: BorderRadius.circular(24),
                   child: CircleAvatar(
                     radius: 22,
-                    // 2. PERBAIKAN: Menggunakan withValues sesuai aturan wajib
                     backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                     child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 26),
                   ),
@@ -163,7 +164,6 @@ class HomeView extends GetView<HomeController> {
             const PromoBanner(),
             const SizedBox(height: 20),
 
-            // 3. PERBAIKAN: Satu Obx untuk seluruh ListView (Mencegah anti-pattern Obx di dalam loop)
             Obx(() {
               return SizedBox(
                 height: 38,
@@ -217,7 +217,6 @@ class HomeView extends GetView<HomeController> {
             }),
             const SizedBox(height: 12),
 
-            // 4. PERBAIKAN: Satu Obx untuk seluruh GridView (Jauh lebih efisien daripada Obx per item)
             Obx(() {
               final items = controller.filteredProducts;
               if (items.isEmpty) {
@@ -248,15 +247,15 @@ class HomeView extends GetView<HomeController> {
                 itemBuilder: (context, index) {
                   final product = items[index];
                   return ProductCard(
-                    title: product['name'],
-                    category: product['category'],
-                    price: currencyFormatter.format(product['price']),
-                    rating: (product['rating'] as num).toDouble(),
-                    imageUrl: product['imageUrl'],
-                    isFavorite: controller.isFavorite(product['id']),
+                    title: product.name,
+                    category: product.category,
+                    price: currencyFormatter.format(product.price),
+                    rating: product.rating,
+                    imageUrl: product.imageUrl,
+                    isFavorite: controller.isFavorite(product.id),
                     onTap: () => controller.openDetail(product),
                     onAddToCart: () => controller.addToCart(product),
-                    onToggleFavorite: () => controller.toggleFavorite(product['id']),
+                    onToggleFavorite: () => controller.toggleFavorite(product.id),
                   );
                 },
               );

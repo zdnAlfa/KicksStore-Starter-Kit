@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/modules/wishlist/controllers/wishlist_controller.dart';
+import 'package:e_commerce/app/modules/cart/controllers/cart_controller.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
-import '../controllers/wishlist_controller.dart';
 
 class WishlistView extends GetView<WishlistController> {
   const WishlistView({super.key});
@@ -10,31 +11,7 @@ class WishlistView extends GetView<WishlistController> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Data mockup wishlist untuk template UI
-    final mockWishlist = [
-      {
-        'title': 'Nike Air Jordan 1 Retro High',
-        'category': 'Basketball',
-        'price': 'Rp 2.499.000',
-        'rating': 4.9,
-        'image': 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=500&q=80',
-      },
-      {
-        'title': 'New Balance 574 Core Grey',
-        'category': 'Lifestyle',
-        'price': 'Rp 1.499.000',
-        'rating': 4.8,
-        'image': 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=500&q=80',
-      },
-      {
-        'title': 'Vans Old Skool Classic Skate',
-        'category': 'Skate',
-        'price': 'Rp 999.000',
-        'rating': 4.7,
-        'image': 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=500&q=80',
-      },
-    ];
+    final cartController = Get.find<CartController>();
 
     return Scaffold(
       appBar: AppBar(
@@ -43,146 +20,167 @@ class WishlistView extends GetView<WishlistController> {
           onPressed: () => Get.back(),
         ),
         title: const Text('Wishlist Favorit'),
+        centerTitle: true,
         actions: [
-          // Indikator Fitur Offline Hive CE
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.success.withAlpha(30),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                tooltip: 'Buka Keranjang',
+                icon: const Icon(Icons.shopping_bag_outlined),
+                onPressed: () => Get.toNamed(Routes.CART),
+              ),
+              Obx(() {
+                final count = cartController.totalItemCount;
+                if (count == 0) return const SizedBox.shrink();
+                return Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Obx(() {
+        final items = controller.wishlistItems;
+
+        if (items.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.offline_pin_rounded, color: AppColors.success, size: 14),
-                SizedBox(width: 4),
+                Icon(
+                  Icons.favorite_border_rounded,
+                  size: 80,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                ),
+                const SizedBox(height: 16),
                 Text(
-                  'Offline Ready',
+                  'Wishlist-mu masih kosong',
                   style: TextStyle(
-                    color: AppColors.success,
-                    fontSize: 11,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Mulai simpan sneakers favoritmu dari beranda!',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final product = items[index];
+            return _buildWishlistCard(context, product, isDark);
+          },
+        );
+      }),
+    );
+  }
+
+  Widget _buildWishlistCard(BuildContext context, dynamic product, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceCard : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              product.imageUrl,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              cacheWidth: 200,
+              errorBuilder: (_, __, ___) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.broken_image),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  product.formattedPrice,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: mockWishlist.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = mockWishlist[index];
-          return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceCard : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                onPressed: () => controller.removeFromWishlist(product.id),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: 85,
-                    height: 85,
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                    child: Image.network(
-                      item['image'] as String,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () => controller.moveToCart(product),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['title'] as String,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['category'] as String,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item['price'] as String,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: const Text(
+                  'Ke Keranjang',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                 ),
-                Column(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.favorite_rounded, color: AppColors.error),
-                      onPressed: () {
-                        Get.snackbar(
-                          'Dihapus',
-                          '${item['title']} dihapus dari wishlist.',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.darkSurfaceCard,
-                          colorText: Colors.white,
-                          margin: const EdgeInsets.all(16),
-                          borderRadius: 12,
-                        );
-                      },
-                    ),
-                    InkWell(
-                      onTap: () {
-                        Get.snackbar(
-                          'Keranjang',
-                          '${item['title']} dipindahkan ke keranjang belanja!',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.success,
-                          colorText: Colors.white,
-                          margin: const EdgeInsets.all(16),
-                          borderRadius: 12,
-                        );
-                        Get.toNamed(Routes.CART);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.add_shopping_cart_rounded,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
