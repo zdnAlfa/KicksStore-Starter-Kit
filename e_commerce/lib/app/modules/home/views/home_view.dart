@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:e_commerce/app/core/theme/app_colors.dart';
+import 'package:e_commerce/app/data/local/storage_service.dart';
 import 'package:e_commerce/app/modules/home/controllers/home_controller.dart';
 import 'package:e_commerce/app/modules/home/views/components/product_card.dart';
 import 'package:e_commerce/app/modules/home/views/components/promo_banner.dart';
+import 'package:e_commerce/app/modules/home/widgets/product_card_shimmer.dart';
 import 'package:e_commerce/app/routes/app_pages.dart';
 
 /// Halaman Utama (Katalog & Beranda KicksStore)
@@ -69,7 +71,7 @@ class HomeView extends GetView<HomeController> {
             onPressed: () => Get.toNamed(Routes.ORDERS),
           ),
 
-          // Tombol Saklar Dark / Light Mode
+          // Sesi 06: Tombol Saklar Dark / Light Mode (Tersimpan Persisten ke SharedPreferences)
           IconButton(
             tooltip: 'Ganti Tema',
             icon: Icon(
@@ -77,10 +79,12 @@ class HomeView extends GetView<HomeController> {
               color: isDark ? AppColors.accent : AppColors.lightTextPrimary,
             ),
             onPressed: () {
-              if (Get.isDarkMode) {
-                Get.changeThemeMode(ThemeMode.light);
+              if (Get.isRegistered<StorageService>()) {
+                Get.find<StorageService>().toggleTheme();
               } else {
-                Get.changeThemeMode(ThemeMode.dark);
+                Get.changeThemeMode(
+                  Get.isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                );
               }
             },
           ),
@@ -319,21 +323,10 @@ class HomeView extends GetView<HomeController> {
             }),
             const SizedBox(height: 12),
 
-            // Sesi 05: GridView Produk Katalog Dinamis & Reaktif (Obx) dengan State Loading & Error
+            // Sesi 06: Tampilan Shimmer Skeleton Loading saat fetch produk berlangsung
             Obx(() {
               if (controller.isLoading.value && controller.products.isEmpty) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(color: AppColors.primary),
-                        SizedBox(height: 16),
-                        Text('Memuat katalog sneakers dari server...'),
-                      ],
-                    ),
-                  ),
-                );
+                return const ProductGridShimmer(itemCount: 4);
               }
 
               if (controller.errorMessage.value.isNotEmpty &&
